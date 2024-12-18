@@ -1,0 +1,107 @@
+---
+title: "TP_Examen"
+author: "Naima"
+date: "2024-12-18"
+output: html_document
+---
+
+```{r}
+library(readr)
+library(dplyr)
+library(ggplot2)
+```
+library(readr)
+library(dplyr)
+library(ggplot2)
+
+## Écrivons une fonction dans R qui lit les 60 fichiers csv avec les données de ventes
+##du FXD JET 100 entre 2020-01-01 et 2024-12-31. Assurez vous que cette fonction
+##peut être réutilisée pour lire les fichiers csv en utilisant des dates différentes que
+##celles spécifiées ci-dessus comme 2020-01-01 et 2022-12-31 ou similaire.
+
+
+```{r}
+lire_ventes <- function(dates_debut, dates_fin, chemin_dossier = "/home/UCA/nakonate/programmationStatistique/exam_data") {
+  
+  dates <- seq.Date(from = as.Date(dates_debut), to = as.Date(dates_fin), by = "month")
+  
+  
+  fichiers <- list.files(path = chemin_dossier, pattern = "\\.csv$", full.names = TRUE)
+  
+  
+  motif_dates <- paste0("ventes", format(dates, "%d-%m-%Y"), ".csv")
+  
+  
+  fichiers_dates <- fichiers[grepl(paste(motif_dates, collapse = "|"), fichiers)]
+  
+  
+  if (length(fichiers_dates) == 0) {
+    stop("Aucun fichier correspondant aux dates spécifiées trouvé.")
+  }
+  
+  
+  ventes <- lapply(fichiers_dates, function(fichier) {
+    if (file.exists(fichier)) {
+      df <- read_csv(fichier, show_col_types = FALSE)  
+      
+     
+      df <- df %>% select(-which(sapply(df, function(col) all(is.na(col)))))  
+      df <- df %>% rename_with(~ gsub("^X", "", .)) 
+      
+      return(df)
+    } else {
+      return(NULL)
+    }
+  })
+  
+ 
+  ventes <- bind_rows(ventes) 
+  if (nrow(ventes) == 0) {
+    stop("Aucune donnée n'a été lue à partir des fichiers CSV.")
+  }
+  
+  
+  return(ventes)
+}
+```
+
+
+
+## lisons les données entre 2020-01-01 et 2024-12-31 en utulisant cette fonction:
+
+```{r}
+ventes <- lire_ventes("2020-01-01", "2024-12-31")
+View(ventes)
+
+head(ventes)
+```
+
+
+
+
+##Visualiser les données de ventes avec ggplot2 et choisissez la visualisation qui
+##montre le mieux l’évolution des ventes entre 2020-01-01 et 2024-12-31. Cette
+##visualisation sera partagée avec d’autres personnes donc assurez vous de bien
+##communiquer ce que le graphe montre et contient directement dans le
+##graphique.
+
+
+
+```{r}
+# Visualiser l'évolution des ventes au fil du temps
+ggplot(ventes, aes(x = date, y = nb_de_ventes)) +
+  geom_line(color = "blue") +
+  labs(
+    title = "Évolution des ventes du FXD JET 100 (2020-01-01 à 2024-12-31)",
+    x = "Date",
+    y = "Nombre de ventes",
+    caption = "Source: Données de ventes"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    plot.title = element_text(hjust = 0.5)
+  )
+
+```
+
